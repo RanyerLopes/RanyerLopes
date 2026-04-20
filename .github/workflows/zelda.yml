@@ -1,50 +1,17 @@
-name: Generate Zelda Contribution Graph
-
+name: Generate Zelda graph
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  schedule: [{ cron: "0 3 * * *" }]
   workflow_dispatch:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: write
-
 jobs:
-  generate:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Checkout zelda-contribution-graph
-        uses: actions/checkout@v4
-        with:
-          repository: RanyerLopes/zelda-contribution-graph
-          path: zcg
-
       - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Build
-        working-directory: zcg
-        run: |
-          npm ci
-          npm run build
-
-      - name: Generate SVGs
+        with: { node-version: 20 }
+      - run: npx zelda-contribution-graph --username ${{ github.repository_owner }} --output zelda.svg
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p dist
-          node zcg/dist/cli.js --username RanyerLopes --token "$GITHUB_TOKEN" --output dist/zelda-contribution-graph.svg --theme dark
-          node zcg/dist/cli.js --username RanyerLopes --token "$GITHUB_TOKEN" --output dist/zelda-contribution-graph-light.svg --theme light
-
-      - name: Deploy to output branch
-        uses: crazy-max/ghaction-github-pages@v4
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          target_branch: output
-          build_dir: dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          commit_message: "chore: update Zelda contribution graph"
